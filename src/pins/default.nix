@@ -123,5 +123,5 @@ let
 in
 {
   inherit mkPins;
-  options = import ./types.nix { inherit lib; };
+  types = import ./types.nix { inherit lib; };
 }

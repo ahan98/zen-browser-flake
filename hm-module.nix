@@ -179,7 +179,45 @@ in
                             type = nullOr float;
                             default = 0.0;
                           };
-                          inherit (pins.types) pins;
+                          pins = mkOption {
+                            type = listOf (submodule {
+                              options = {
+                                title = mkOption { type = str; };
+                                url = mkOption {
+                                  type = nullOr str;
+                                  default = null;
+                                };
+                                isEssential = mkOption {
+                                  type = bool;
+                                  default = false;
+                                };
+                                icon = mkOption {
+                                  type = nullOr str;
+                                  default = null;
+                                };
+                                collapsed = mkOption {
+                                  type = bool;
+                                  default = false;
+                                };
+                                items = mkOption {
+                                  type = listOf (submodule {
+                                    options = {
+                                      inherit
+                                        title
+                                        url
+                                        isEssential
+                                        icon
+                                        collapsed
+                                        items
+                                        ;
+                                    };
+                                  });
+                                  default = [ ];
+                                };
+                              };
+                            });
+                            default = [ ];
+                          };
                         };
                       }
                     )
@@ -357,6 +395,92 @@ in
               if profile.spaces != { } then "WHERE " else ""
             }${concatMapAttrsStringSep " AND " (_: s: "NOT uuid = '{${s.id}}'") profile.spaces}" || exit 1
           '';
+
+          insertPins = ''
+            # Create zen_pins table if it doesn't exist
+            ${sqlite3} "${placesFile}" "${
+              concatStringsSep " " [
+                "CREATE TABLE IF NOT EXISTS zen_pins ("
+                "id INTEGER PRIMARY KEY,"
+                "uuid TEXT UNIQUE NOT NULL,"
+                "title TEXT NOT NULL,"
+                "url TEXT,"
+                "container_id INTEGER,"
+                "workspace_uuid TEXT,"
+                "position INTEGER NOT NULL DEFAULT 0,"
+                "is_essential BOOLEAN NOT NULL DEFAULT 0,"
+                "is_group BOOLEAN NOT NULL DEFAULT 0,"
+                "created_at INTEGER NOT NULL,"
+                "updated_at INTEGER NOT NULL,"
+                "edited_title BOOLEAN NOT NULL DEFAULT 0,"
+                "is_folder_collapsed BOOLEAN NOT NULL DEFAULT 0,"
+                "folder_icon TEXT DEFAULT NULL,"
+                "folder_parent_uuid TEXT DEFAULT NULL"
+                ");"
+              ]
+            }" || exit 1
+
+            ${sqlite3} "${placesFile}" "CREATE INDEX IF NOT EXISTS idx_zen_pins_uuid ON zen_pins(uuid);" || exit 1
+
+            # Clear existing pins for managed workspaces
+            ${sqlite3} "${placesFile}" "DELETE FROM zen_pins WHERE workspace_uuid IN (${
+              concatMapStringsSep "," (s: "'${s.id}'") (mapAttrsToList (_: s: s) profile.spaces)
+            });" || exit 1
+
+            # Insert new pins
+            ${concatMapAttrsStringSep "\n\n" (
+              _: space:
+              let
+                spacePins = pins.mkPins {
+                  pins = space.pins or [ ];
+                  workspaceUuid = space.id;
+                  containerId = space.container or null;
+                };
+              in
+              optionalString (spacePins != [ ]) ''
+                ${sqlite3} "${placesFile}" "${
+                  (concatStringsSep " " [
+                    "INSERT INTO zen_pins ("
+                    "uuid,"
+                    "title,"
+                    "url,"
+                    "container_id,"
+                    "workspace_uuid,"
+                    "position,"
+                    "is_essential,"
+                    "is_group,"
+                    "edited_title,"
+                    "is_folder_collapsed,"
+                    "folder_icon,"
+                    "folder_parent_uuid,"
+                    "created_at,"
+                    "updated_at"
+                    ") VALUES"
+                  ])
+                  + (pipe spacePins [
+                    (map (pin: [
+                      "'${pin.uuid}'"
+                      "'${pin.title}'"
+                      (if isNull pin.url then "NULL" else "'${pin.url}'")
+                      (if isNull pin.container then "NULL" else toString pin.container)
+                      "'${pin.workspaceUuid}'"
+                      (toString pin.position)
+                      (if pin.isEssential == true then "1" else "0")
+                      (if pin.isGroup == true then "1" else "0")
+                      (if pin.editedTitle == true then "1" else "0")
+                      (if pin.isFolderCollapsed == true then "1" else "0")
+                      (if isNull pin.folderIcon then "NULL" else "'${pin.folderIcon}'")
+                      (if isNull pin.parentUuid then "NULL" else "'${pin.parentUuid}'")
+                      "strftime('%s', 'now')"
+                      "strftime('%s', 'now')"
+                    ]))
+                    (map (row: concatStringsSep "," row))
+                    (concatMapStringsSep "," (row: "(${row})"))
+                  ])
+                };" || exit 1
+              ''
+            ) profile.spaces}
+          '';
         in
         nameValuePair scriptFile {
           source = getExe (
@@ -367,6 +491,7 @@ in
               function update_spaces() {
                 ${optionalString (profile.spaces != { }) insertSpaces}
                 ${optionalString (profile.spacesForce) deleteSpaces}
+                ${optionalString (profile.spaces != { }) insertPins}
               }
 
               error="$(update_spaces 2>&1 1>/dev/null)"
