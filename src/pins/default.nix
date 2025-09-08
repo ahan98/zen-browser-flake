@@ -36,43 +36,6 @@ let
 
   generatePinUUID = workspaceUuid: position: generateUUID "${workspaceUuid}:${toString position}";
 
-  # Helper to create a tab pin
-  mkTab =
-    {
-      title,
-      url,
-      isEssential ? false,
-    }@inputs:
-    inputs
-    // {
-      isGroup = false;
-      editedTitle = true; # In declarative approach, title is always edited
-      isFolderCollapsed = null;
-      folderIcon = null;
-    };
-
-  # Helper to create a folder pin
-  mkFolder =
-    {
-      title,
-      icon ? null,
-      collapsed ? false,
-      items ? [ ],
-    }:
-    {
-      inherit title;
-      url = null;
-      isEssential = false;
-      isGroup = true;
-      editedTitle = true;
-      isFolderCollapsed = collapsed;
-      folderIcon = icon;
-      parentUuid = null;
-      _items = items; # Internal use for flattening
-    };
-
-  isTab = attrs: (attrs ? url) && attrs.url != null;
-
   flatten =
     {
       workspaceUuid,
@@ -87,7 +50,28 @@ let
 
       processChild = flatten (context // { parentUuid = uuid; });
 
-      wrapped = if isTab pin then (mkTab pin) // { container = containerId; } else mkFolder pin;
+      wrapped =
+        if (pin ? url && pin.url != null) then
+          pin
+          // {
+            isGroup = false;
+            editedTitle = true;
+            isFolderCollapsed = null;
+            folderIcon = null;
+            container = containerId;
+          }
+        else
+          pin
+          // {
+            url = null;
+            isEssential = false;
+            isGroup = true;
+            editedTitle = true;
+            isFolderCollapsed = pin.collapsed or false;
+            folderIcon = pin.icon or null;
+            parentUuid = null;
+            items = pin.items or [ ];
+          };
 
       initialState = {
         pins = acc.pins ++ [
@@ -102,7 +86,7 @@ let
         inherit count;
       };
 
-      children = if (wrapped ? _items) then wrapped._items else [ ];
+      children = wrapped.items or [ ];
     in
     lib.foldl' processChild initialState children;
 
@@ -119,7 +103,7 @@ let
         count = 0;
       } pins;
     in
-    map (attrs: removeAttrs attrs [ "_items" ]) result.pins;
+    map (attrs: removeAttrs attrs [ "items" ]) result.pins;
 in
 {
   inherit mkPins;

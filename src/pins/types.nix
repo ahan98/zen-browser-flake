@@ -4,60 +4,50 @@ let
   inherit (lib) mkOption;
   inherit (lib.types)
     bool
-    either
     listOf
     nullOr
     str
     submodule
     ;
 in
-rec {
-  # Recursive types for pins
-  pinnedTab = submodule {
-    options = {
-      title = mkOption {
-        type = str;
-        description = "Title of the pinned tab.";
-      };
-      url = mkOption {
-        type = str;
-        description = "URL of the pinned tab.";
-      };
-      isEssential = mkOption {
-        type = bool;
-        default = false;
-        description = "Whether this is an essential tab.";
-      };
-    };
-  };
-
-  pinnedFolder = submodule {
-    options = {
-      title = mkOption {
-        type = str;
-        description = "Title of the folder.";
-      };
-      icon = mkOption {
-        type = nullOr str;
-        default = null;
-        description = "Icon for the folder.";
-      };
-      collapsed = mkOption {
-        type = bool;
-        default = false;
-        description = "Whether the folder is collapsed.";
-      };
-      items = mkOption {
-        type = listOf (either pinnedFolder pinnedTab);
-        default = [ ];
-        description = "Child items in this folder.";
-      };
-    };
-  };
-
+{
   pins = mkOption {
-    type = listOf (either pinnedFolder pinnedTab);
+    type = listOf (submodule {
+      options = rec {
+        title = mkOption { type = str; };
+        url = mkOption {
+          type = nullOr str;
+          default = null;
+        };
+        isEssential = mkOption {
+          type = bool;
+          default = false;
+        };
+        icon = mkOption {
+          type = nullOr str;
+          default = null;
+        };
+        collapsed = mkOption {
+          type = bool;
+          default = false;
+        };
+        items = mkOption {
+          type = listOf (submodule {
+            options = {
+              inherit
+                title
+                url
+                isEssential
+                icon
+                collapsed
+                items
+                ;
+            };
+          });
+          default = [ ];
+        };
+      };
+    });
     default = [ ];
-    description = "Pinned workspace tabs and/or folders.";
   };
 }

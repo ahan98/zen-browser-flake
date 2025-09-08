@@ -179,45 +179,7 @@ in
                             type = nullOr float;
                             default = 0.0;
                           };
-                          pins = mkOption {
-                            type = listOf (submodule {
-                              options = {
-                                title = mkOption { type = str; };
-                                url = mkOption {
-                                  type = nullOr str;
-                                  default = null;
-                                };
-                                isEssential = mkOption {
-                                  type = bool;
-                                  default = false;
-                                };
-                                icon = mkOption {
-                                  type = nullOr str;
-                                  default = null;
-                                };
-                                collapsed = mkOption {
-                                  type = bool;
-                                  default = false;
-                                };
-                                items = mkOption {
-                                  type = listOf (submodule {
-                                    options = {
-                                      inherit
-                                        title
-                                        url
-                                        isEssential
-                                        icon
-                                        collapsed
-                                        items
-                                        ;
-                                    };
-                                  });
-                                  default = [ ];
-                                };
-                              };
-                            });
-                            default = [ ];
-                          };
+                          inherit (pins.types) pins;
                         };
                       }
                     )
