@@ -2,6 +2,7 @@ let
   pkgs = import <nixpkgs> { };
   pins = import ./default.nix { inherit (pkgs) lib; };
   inherit (pins) mkPins;
+  inherit (pkgs) lib;
 
   example =
     let
@@ -45,6 +46,24 @@ let
         }
       ];
     in
-    mkPins { inherit workspaceUuid containerId pins; };
+    mkPins {
+      inherit workspaceUuid containerId pins;
+    };
+
+  result = pins.mkPins {
+    workspaceUuid = "test-workspace";
+    pins = [
+      {
+        title = "Test";
+        items = [
+          {
+            title = "GitHub";
+            url = "https://github.com";
+          }
+        ];
+      }
+    ];
+  };
+
 in
-example
+lib.debug.traceSeqN 2 (map (p: { inherit (p) uuid position title; }) result) result

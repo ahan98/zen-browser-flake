@@ -45,8 +45,7 @@ let
 
     acc: pin:
     let
-      count = acc.count + 1;
-      uuid = generatePinUUID workspaceUuid count;
+      uuid = generatePinUUID workspaceUuid acc.count;
 
       processChild = flatten (context // { parentUuid = uuid; });
 
@@ -69,7 +68,7 @@ let
             editedTitle = true;
             isFolderCollapsed = pin.collapsed or false;
             folderIcon = pin.icon or null;
-            parentUuid = null;
+            container = null;
             items = pin.items or [ ];
           };
 
@@ -79,11 +78,11 @@ let
             wrapped
             // {
               inherit workspaceUuid parentUuid uuid;
-              position = count;
+              position = acc.count;
             }
           )
         ];
-        inherit count;
+        count = acc.count + 1;
       };
 
       children = wrapped.items or [ ];

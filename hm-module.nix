@@ -421,18 +421,18 @@ in
                   ])
                   + (pipe spacePins [
                     (map (pin: [
-                      "'${pin.uuid}'"
+                      "'{${pin.uuid}}'"
                       "'${pin.title}'"
                       (if isNull pin.url then "NULL" else "'${pin.url}'")
                       (if isNull pin.container then "NULL" else toString pin.container)
-                      "'${pin.workspaceUuid}'"
+                      "'{${pin.workspaceUuid}}'"
                       (toString pin.position)
                       (if pin.isEssential == true then "1" else "0")
                       (if pin.isGroup == true then "1" else "0")
                       (if pin.editedTitle == true then "1" else "0")
                       (if pin.isFolderCollapsed == true then "1" else "0")
                       (if isNull pin.folderIcon then "NULL" else "'${pin.folderIcon}'")
-                      (if isNull pin.parentUuid then "NULL" else "'${pin.parentUuid}'")
+                      (if isNull pin.parentUuid then "NULL" else "'{${pin.parentUuid}}'")
                       "strftime('%s', 'now')"
                       "strftime('%s', 'now')"
                     ]))
