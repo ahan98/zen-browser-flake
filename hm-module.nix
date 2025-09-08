@@ -183,6 +183,18 @@ in
                   );
                   default = { };
                 };
+                keyboard-shortcuts = mkOption {
+                  type = nullOr (submodule {
+                    options = {
+                      source = mkOption {
+                        type = types.path;
+                        description = "Path to zen-keyboard-shortcuts.json file";
+                      };
+                    };
+                  });
+                  default = null;
+                  description = "Zen browser keyboard shortcuts configuration";
+                };
               };
             }
           )
@@ -383,6 +395,15 @@ in
           executable = true;
           force = true;
         }
-      ) (filterAttrs (_: profile: profile.spaces != { } || profile.spacesForce) cfg.profiles));
+      ) (filterAttrs (_: profile: profile.spaces != { } || profile.spacesForce) cfg.profiles))
+
+      # Add keyboard shortcuts symlinks
+      // (mapAttrs' (
+        profileName: profile:
+        nameValuePair "${configPath}/${profileName}/zen-keyboard-shortcuts.json" {
+          inherit (profile.keyboard-shortcuts) source;
+        }
+      ) (filterAttrs (_: profile: profile.keyboard-shortcuts != null) cfg.profiles));
+
   };
 }
