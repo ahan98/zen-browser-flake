@@ -19,6 +19,8 @@ let
     types
     ;
 
+  pins = import ./src/pins { inherit lib; };
+
   cfg = getAttrFromPath modulePath config;
 
   applicationName = "Zen Browser";
@@ -177,12 +179,14 @@ in
                             type = nullOr float;
                             default = 0.0;
                           };
+                          inherit (pins.types) pins;
                         };
                       }
                     )
                   );
                   default = { };
                 };
+
                 keyboard-shortcuts = mkOption {
                   type = nullOr (submodule {
                     options = {
