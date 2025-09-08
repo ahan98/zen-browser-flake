@@ -66,7 +66,7 @@ let
             isEssential = false;
             isGroup = true;
             editedTitle = true;
-            isFolderCollapsed = pin.collapsed or false;
+            isFolderCollapsed = true;
             folderIcon = pin.icon or null;
             container = null;
             items = pin.items or [ ];
