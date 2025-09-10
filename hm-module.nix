@@ -56,6 +56,18 @@ in
   ];
 
   options = setAttrByPath modulePath {
+    extraPrefsFiles = mkOption {
+      type = types.listOf types.str;
+      default = [ ];
+      description = "List of extra preference files to be included.";
+    };
+
+    extraPrefs = mkOption {
+      type = types.str;
+      default = "";
+      description = "Extra preferences to be included.";
+    };
+
     profiles = mkOption {
       type =
         with types;
@@ -211,6 +223,8 @@ in
           policies = cfg.policies;
         }) { }).override
           {
+            extraPrefs = cfg.extraPrefs;
+            extraPrefsFiles = cfg.extraPrefsFiles;
             nativeMessagingHosts = cfg.nativeMessagingHosts;
           };
 
@@ -404,6 +418,5 @@ in
           inherit (profile.keyboard-shortcuts) source;
         }
       ) (filterAttrs (_: profile: profile.keyboard-shortcuts != null) cfg.profiles));
-
   };
 }
